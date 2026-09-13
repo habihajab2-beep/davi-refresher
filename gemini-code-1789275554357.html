@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StellarAPI Token Refresher + Burst Control</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkbg: '#0f172a',
+                        cardbg: '#1e293b',
+                        accent: '#6366f1',
+                        accenthover: '#4f46e5'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-darkbg text-slate-100 min-h-screen flex items-center justify-center p-4 selection:bg-indigo-500 selection:text-white">
+
+    <div class="w-full max-w-2xl bg-cardbg border border-slate-700/60 rounded-2xl shadow-2xl p-6 sm:p-8 space-y-6">
+        <!-- Header -->
+        <div class="flex items-center justify-between border-b border-slate-700/60 pb-4">
+            <div>
+                <h1 class="text-2xl font-bold bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent">StellarAPI Refresher</h1>
+                <p class="text-xs text-slate-400 mt-1">Backend: <span class="font-mono text-slate-300">https://stellarapi-backend-production.up.railway.app</span></p>
+            </div>
+            <div id="statusBadge" class="px-3 py-1 rounded-full text-xs font-semibold bg-slate-800 text-slate-400 border border-slate-700">
+                Idle
+            </div>
+        </div>
+
+        <!-- Lifetime & Expiry Display -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-900/50 p-4 rounded-xl border border-slate-700/40">
+            <div>
+                <span class="text-xs font-medium text-slate-400 uppercase tracking-wider">Token Expiration</span>
+                <div id="expDateDisplay" class="text-sm font-mono text-slate-200 mt-1">Not loaded</div>
+            </div>
+            <div>
+                <span class="text-xs font-medium text-slate-400 uppercase tracking-wider">Time Remaining (Lifetime)</span>
+                <div id="countdownDisplay" class="text-sm font-mono font-semibold text-emerald-400 mt-1">--:--:--</div>
+            </div>
+        </div>
+
+        <!-- Input Section -->
+        <div class="space-y-4">
+            <div>
+                <label for="refreshTokenInput" class="block text-sm font-medium text-slate-300 mb-1.5">Refresh Token</label>
+                <textarea id="refreshTokenInput" rows="2" placeholder="Paste refresh token here..." 
+                    class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all resize-none"></textarea>
+            </div>
+
+            <!-- Multiplier & Timed Loop Controls -->
+            <div class="bg-slate-900/60 border border-slate-700/50 p-4 rounded-xl space-y-3">
+                <div class="flex items-center justify-between">
+                    <label for="speedSlider" class="text-sm font-medium text-slate-300 flex items-center gap-2">
+                        Frequency Multiplier: 
+                        <span id="speedValueLabel" class="font-mono text-indigo-400 font-bold">1x</span>
+                    </label>
+                    <span class="text-[11px] text-slate-400" id="intervalHint">Base poll: 60s / scaled</span>
+                </div>
+                <input type="range" id="speedSlider" min="1" max="100" value="1" 
+                    class="w-full accent-indigo-500 bg-slate-800 rounded-lg h-2 cursor-pointer">
+
+                <div class="flex flex-wrap items-center justify-between gap-3 pt-2">
+                    <div class="flex items-center gap-3">
+                        <button id="startTimedLoopBtn" 
+                            class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white text-xs font-medium rounded-lg shadow transition-all">
+                            Start 2min Cycle
+                        </button>
+                        <button id="stopTimedLoopBtn" disabled
+                            class="px-4 py-2 bg-rose-600/50 hover:bg-rose-600 disabled:bg-slate-800 disabled:text-slate-500 text-white text-xs font-medium rounded-lg transition-all">
+                            Stop (Manual)
+                        </button>
+                    </div>
+                    <div id="loopCountdownBadge" class="text-xs font-mono text-slate-400 hidden">
+                        Timer: <span id="loopTimerVal">120</span>s left
+                    </div>
+                </div>
+            </div>
+
+            <!-- Standard Controls & Auto-Refresh Toggle -->
+            <div class="flex flex-wrap items-center justify-between gap-4 pt-1">
+                <label class="relative inline-flex items-center cursor-pointer select-none">
+                    <input type="checkbox" id="autoRefreshToggle" class="sr-only peer">
+                    <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                    <span class="ml-3 text-sm font-medium text-slate-300">Auto-Refresh (Smart Expiry)</span>
+                </label>
+
+                <button id="manualRefreshBtn" 
+                    class="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 border border-slate-600 text-sm font-medium rounded-xl transition-all flex items-center gap-2">
+                    Refresh Now
+                </button>
+            </div>
+        </div>
+
+        <!-- Output JSON Section -->
+        <div class="space-y-2">
+            <div class="flex items-center justify-between">
+                <span class="text-sm font-medium text-slate-300">JSON Output</span>
+                <button id="copyJsonBtn" class="text-xs text-indigo-400 hover:text-indigo-300 transition-colors">Copy JSON</button>
+            </div>
+            <pre id="jsonOutput" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-xs font-mono text-slate-300 overflow-x-auto min-h-[120px] max-h-[220px]">{
+  "status": "ready"
+}</pre>
+        </div>
+
+        <!-- Route fallback diagnostic log -->
+        <div id="logArea" class="text-xs text-slate-500 font-mono bg-slate-950/40 p-2.5 rounded-lg border border-slate-800 hidden">
+            Log: Ready.
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'https://stellarapi-backend-production.up.railway.app';
+        const FALLBACK_ROUTES = ['/auth/refresh', '/v1/auth/refresh', '/refresh', '/token/refresh'];
+
+        const refreshTokenInput = document.getElementById('refreshTokenInput');
+        const manualRefreshBtn = document.getElementById('manualRefreshBtn');
+        const autoRefreshToggle = document.getElementById('autoRefreshToggle');
+        const speedSlider = document.getElementById('speedSlider');
+        const speedValueLabel = document.getElementById('speedValueLabel');
+        const intervalHint = document.getElementById('intervalHint');
+        const startTimedLoopBtn = document.getElementById('startTimedLoopBtn');
+        const stopTimedLoopBtn = document.getElementById('stopTimedLoopBtn');
+        const loopCountdownBadge = document.getElementById('loopCountdownBadge');
+        const loopTimerVal = document.getElementById('loopTimerVal');
+
+        const jsonOutput = document.getElementById('jsonOutput');
+        const statusBadge = document.getElementById('statusBadge');
+        const expDateDisplay = document.getElementById('expDateDisplay');
+        const countdownDisplay = document.getElementById('countdownDisplay');
+        const logArea = document.getElementById('logArea');
+        const copyJsonBtn = document.getElementById('copyJsonBtn');
+
+        let currentBearerToken = null;
+        let tokenExpiryTimestamp = null;
+        let countdownInterval = null;
+        let autoRefreshTimer = null;
+
+        // Timed loop state for 2min accelerated check runner
+        let timedLoopActive = false;
+        let timedLoopIntervalObj = null;
+        let timedLoopCountdownObj = null;
+        let remainingLoopSeconds = 120;
+
+        function logMsg(text) {
+            logArea.classList.remove('hidden');
+            logArea.textContent = `[${new Date().toLocaleTimeString()}] ${text}`;
+        }
+
+        function setStatus(text, type = 'idle') {
+            statusBadge.textContent = text;
+            statusBadge.className = 'px-3 py-1 rounded-full text-xs font-semibold border ' + {
+                idle: 'bg-slate-800 text-slate-400 border-slate-700',
+                loading: 'bg-amber-500/10 text-amber-400 border-amber-500/30 animate-pulse',
+                success: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
+                error: 'bg-rose-500/10 text-rose-400 border-rose-500/30'
+            }[type];
+        }
+
+        function parseJwtExp(token) {
+            try {
+                const base64Url = token.split('.')[1];
+                if (!base64Url) return null;
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+                const parsed = JSON.parse(jsonPayload);
+                return parsed.exp ? parsed.exp : null;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function updateLifetimeDisplays() {
+            if (!tokenExpiryTimestamp) {
+                expDateDisplay.textContent = 'No bearer exp found';
+                countdownDisplay.textContent = '--:--', countdownDisplay.className = 'text-sm font-mono text-slate-400 mt-1';
+                return;
+            }
+
+            const expDate = new Date(tokenExpiryTimestamp * 1000);
+            expDateDisplay.textContent = expDate.toLocaleTimeString();
+
+            const now = Math.floor(Date.now() / 1000);
+            const diff = tokenExpiryTimestamp - now;
+
+            if (diff <= 0) {
+                countdownDisplay.textContent = 'EXPIRED';
+                countdownDisplay.className = 'text-sm font-mono font-bold text-rose-500 mt-1';
+            } else {
+                const hours = Math.floor(diff / 3600);
+                const minutes = Math.floor((diff % 3600) / 60);
+                const seconds = diff % 60;
+                countdownDisplay.textContent = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                
+                if (diff < 60) {
+                    countdownDisplay.className = 'text-sm font-mono font-bold text-amber-400 mt-1';
+                } else {
+                    countdownDisplay.className = 'text-sm font-mono font-semibold text-emerald-400 mt-1';
+                }
+            }
+        }
+
+        function startCountdownLoop() {
+            if (countdownInterval) clearInterval(countdownInterval);
+            updateLifetimeDisplays();
+            countdownInterval = setInterval(updateLifetimeDisplays, 1000);
+        }
+
+        async function executeTokenRefresh(currentRefreshVal, currentBearerVal) {
+            if (!currentRefreshVal.trim()) throw new Error("No refresh token provided.");
+            let lastError = null;
+
+            for (const route of FALLBACK_ROUTES) {
+                const targetUrl = API_BASE + route;
+                try {
+                    const headers = { 'Content-Type': 'application/json' };
+                    if (currentBearerVal) headers['Authorization'] = `Bearer ${currentBearerVal}`;
+
+                    const response = await fetch(targetUrl, {
+                        method: 'POST',
+                        headers: headers,
+                        body: JSON.stringify({ refresh_token: currentRefreshVal })
+                    });
+
+                    if (response.ok) {
+                        return await response.json();
+                    } else {
+                        lastError = new Error(`Route ${route} returned HTTP ${response.status}`);
+                    }
+                } catch (err) {
+                    lastError = err;
+                }
+            }
+            throw lastError || new Error("All fallback routes failed.");
+        }
+
+        async function handleRefreshAction(isAuto = false) {
+            const rToken = refreshTokenInput.value.trim();
+            if (!rToken) {
+                if (!isAuto) alert('Please enter a refresh token.');
+                return;
+            }
+
+            if (!isAuto) setStatus('Refreshing...', 'loading');
+            try {
+                const data = await executeTokenRefresh(rToken, currentBearerToken);
+                jsonOutput.textContent = JSON.stringify(data, null, 2);
+
+                if (data.bearer) {
+                    currentBearerToken = data.bearer;
+                    tokenExpiryTimestamp = parseJwtExp(data.bearer);
+                    startCountdownLoop();
+                }
+
+                if (data.refresh_token) {
+                    refreshTokenInput.value = data.refresh_token;
+                }
+
+                if (!isAuto) setStatus('Success', 'success');
+                scheduleAutoRefreshIfNeeded();
+            } catch (err) {
+                logMsg(`Error: ${err.message}`);
+                if (!isAuto) setStatus('Failed', 'error');
+            }
+        }
+
+        function scheduleAutoRefreshIfNeeded() {
+            if (autoRefreshTimer) clearTimeout(autoRefreshTimer);
+            if (!autoRefreshToggle.checked) return;
+
+            const now = Math.floor(Date.now() / 1000);
+            let delayMs = 60 * 1000;
+
+            if (tokenExpiryTimestamp) {
+                const remaining = tokenExpiryTimestamp - now;
+                const triggerInSec = Math.max(5, Math.min(remaining - 30, remaining * 0.2));
+                delayMs = Math.max(3000, triggerInSec * 1000);
+            }
+
+            autoRefreshTimer = setTimeout(() => {
+                if (autoRefreshToggle.checked) handleRefreshAction(true);
+            }, delayMs);
+        }
+
+        // Slider UI & dynamic cadence calculation
+        speedSlider.addEventListener('input', (e) => {
+            speedValueLabel.textContent = `${e.target.value}x`;
+            const multiplier = parseInt(e.target.value, 10);
+            const calculatedMs = Math.max(250, Math.floor(5000 / multiplier));
+            intervalHint.textContent = `Burst check interval: ~${(calculatedMs/1000).toFixed(2)}s`;
+        });
+
+        function stopTimedLoop() {
+            timedLoopActive = false;
+            if (timedLoopIntervalObj) clearInterval(timedLoopIntervalObj);
+            if (timedLoopCountdownObj) clearInterval(timedLoopCountdownObj);
+            timedLoopIntervalObj = null;
+            timedLoopCountdownObj = null;
+
+            startTimedLoopBtn.disabled = false;
+            startTimedLoopBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            stopTimedLoopBtn.disabled = true;
+            loopCountdownBadge.classList.add('hidden');
+            logMsg('2-minute accelerated cycle manually stopped.');
+            setStatus('Loop Stopped', 'idle');
+        }
+
+        function startTimedLoop() {
+            if (timedLoopActive) return;
+            const multiplier = parseInt(speedSlider.value, 10);
+            const checkIntervalMs = Math.max(250, Math.floor(5000 / multiplier));
+
+            timedLoopActive = true;
+            remainingLoopSeconds = 120;
+            loopTimerVal.textContent = remainingLoopSeconds;
+            loopCountdownBadge.classList.remove('hidden');
+
+            startTimedLoopBtn.disabled = true;
+            startTimedLoopBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            stopTimedLoopBtn.disabled = false;
+
+            setStatus(`Burst Active (${multiplier}x)`, 'loading');
+            logMsg(`Started 2min accelerated pulse cycle at ${multiplier}x (${checkIntervalMs}ms interval).`);
+
+            // Countdown ticker for the 2min window
+            timedLoopCountdownObj = setInterval(() => {
+                remainingLoopSeconds--;
+                loopTimerVal.textContent = Math.max(0, remainingLoopSeconds);
+                if (remainingLoopSeconds <= 0) {
+                    stopTimedLoop();
+                }
+            }, 1000);
+
+            // Accelerated runner loop
+            timedLoopIntervalObj = setInterval(() => {
+                if (!timedLoopActive) return;
+                handleRefreshAction(true);
+            }, checkIntervalMs);
+        }
+
+        startTimedLoopBtn.addEventListener('click', startTimedLoop);
+        stopTimedLoopBtn.addEventListener('click', stopTimedLoop);
+        manualRefreshBtn.addEventListener('click', () => handleRefreshAction(false));
+        autoRefreshToggle.addEventListener('change', scheduleAutoRefreshIfNeeded);
+
+        copyJsonBtn.addEventListener('click', () => {
+            navigator.clipboard.writeText(jsonOutput.textContent);
+            copyJsonBtn.textContent = 'Copied!';
+            setTimeout(() => copyJsonBtn.textContent = 'Copy JSON', 2000);
+        });
+
+        // Initialize hint state
+        speedSlider.dispatchEvent(new Event('input'));
+    </script>
+</body>
+</html>
